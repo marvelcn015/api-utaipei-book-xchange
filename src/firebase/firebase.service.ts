@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
+import { Bucket } from '@google-cloud/storage';
 
 @Injectable()
 export class FirebaseService implements OnModuleInit {
@@ -35,7 +36,7 @@ export class FirebaseService implements OnModuleInit {
     return this.storage;
   }
 
-  getStorageBucket(): admin.storage.Bucket {
+  getStorageBucket(): Bucket {
     return this.storage.bucket();
   }
 }
