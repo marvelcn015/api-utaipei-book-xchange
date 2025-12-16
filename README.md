@@ -1,98 +1,309 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# UTaipei BookXchange API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A RESTful API backend for a second-hand book exchange platform designed for Taipei Municipal University students. Built with NestJS, Firebase Firestore, and Firebase Cloud Storage.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Project Overview
 
-## Description
+UTaipei BookXchange enables university students to buy, sell, and exchange textbooks within their academic community. The platform facilitates peer-to-peer transactions while maintaining user privacy and security through JWT-based authentication.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Key Features
 
-## Project setup
+- **User Authentication**: Secure registration and login with JWT tokens and bcrypt password hashing
+- **Book Listings**: Create, read, update, and delete book listings with image upload support
+- **Multiple Transaction Types**: Support for selling, exchanging, or both transaction modes
+- **Advanced Filtering**: Search books by department, course, type, and availability status
+- **Public Comments**: Community discussion system for book listings
+- **Transaction Management**: Complete workflow from initiation to completion with status tracking
+- **Image Storage**: Upload up to 5 images per book (5MB each) to Firebase Cloud Storage
+- **API Documentation**: Interactive Swagger/OpenAPI documentation
 
-```bash
-$ pnpm install
+## File Structure
+
+```
+api-utaipei-book-xchange/
+├── src/
+│   ├── auth/                   # Authentication (JWT, registration, login)
+│   ├── users/                  # User profile management
+│   ├── books/                  # Book listings and image uploads
+│   ├── comments/               # Comment system for books
+│   ├── transactions/           # Transaction workflow management
+│   ├── firebase/               # Firebase Admin SDK configuration
+│   ├── common/                 # Shared guards, decorators, filters
+│   ├── app.module.ts
+│   └── main.ts
+├── test/                       
+├── .env.example                # Environment configuration template
+├── package.json
+└── tsconfig.json
 ```
 
-## Compile and run the project
+## System Architecture
 
-```bash
-# development
-$ pnpm run start
+### Technology Stack
 
-# watch mode
-$ pnpm run start:dev
+```mermaid
+graph TB
+    subgraph "Frontend Layer"
+        Client[Client Application]
+    end
 
-# production mode
-$ pnpm run start:prod
+    subgraph "API Layer"
+        NestJS[NestJS Framework]
+        Passport[Passport JWT]
+        Swagger[Swagger/OpenAPI]
+    end
+
+    subgraph "Service Layer"
+        Auth[Auth Service]
+        Users[Users Service]
+        Books[Books Service]
+        Comments[Comments Service]
+        Transactions[Transactions Service]
+        Firebase[Firebase Service]
+    end
+
+    subgraph "Data Layer"
+        Firestore[(Firebase Firestore)]
+        Storage[(Cloud Storage)]
+    end
+
+    Client -->|HTTP/JSON| NestJS
+    NestJS --> Passport
+    NestJS --> Swagger
+    NestJS --> Auth
+    NestJS --> Users
+    NestJS --> Books
+    NestJS --> Comments
+    NestJS --> Transactions
+    Auth --> Firebase
+    Users --> Firebase
+    Books --> Firebase
+    Comments --> Firebase
+    Transactions --> Firebase
+    Firebase --> Firestore
+    Firebase --> Storage
 ```
 
-## Run tests
+### Authentication Flow
 
-```bash
-# unit tests
-$ pnpm run test
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant AuthService
+    participant Firestore
+    participant JWTService
 
-# e2e tests
-$ pnpm run test:e2e
+    Client->>Controller: POST /auth/register
+    Controller->>AuthService: register(dto)
+    AuthService->>Firestore: Check existing email
+    AuthService->>AuthService: Hash password (bcrypt)
+    AuthService->>Firestore: Create user document
+    AuthService->>Controller: Return userId
+    Controller->>Client: Success response
 
-# test coverage
-$ pnpm run test:cov
+    Client->>Controller: POST /auth/login
+    Controller->>AuthService: login(dto)
+    AuthService->>Firestore: Find user by email
+    AuthService->>AuthService: Verify password
+    AuthService->>JWTService: Generate token
+    AuthService->>Controller: Return token + user
+    Controller->>Client: Access token + user data
+
+    Client->>Controller: GET /protected-route (Bearer token)
+    Controller->>JWTGuard: Validate token
+    JWTGuard->>JWTService: Verify signature
+    JWTService->>AuthService: Validate user
+    AuthService->>Firestore: Get user data
+    AuthService->>JWTGuard: User payload
+    JWTGuard->>Controller: Attach user to request
+    Controller->>Client: Protected resource
 ```
 
-## Deployment
+### Transaction State Machine
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+```mermaid
+stateDiagram-v2
+    [*] --> pending: Create transaction
+    pending --> accepted: Seller accepts
+    pending --> rejected: Seller rejects
+    pending --> cancelled: Buyer cancels
+    accepted --> completed: Transaction finalized
+    accepted --> cancelled: Either party cancels
+    completed --> [*]: Update book status
+    rejected --> [*]
+    cancelled --> [*]
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+    note right of completed
+        Book status updates to
+        "sold" or "exchanged"
+    end note
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Data Model
 
-## Resources
+```mermaid
+erDiagram
+    USERS ||--o{ BOOKS : owns
+    USERS ||--o{ COMMENTS : writes
+    USERS ||--o{ TRANSACTIONS : initiates
+    BOOKS ||--o{ COMMENTS : has
+    BOOKS ||--o{ TRANSACTIONS : involves
 
-Check out a few resources that may come in handy when working with NestJS:
+    USERS {
+        string id PK
+        string email
+        string password
+        string name
+        string department
+        string studentId
+        timestamp createdAt
+        timestamp updatedAt
+    }
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+    BOOKS {
+        string id PK
+        string userId FK
+        string title
+        string description
+        string department
+        string course
+        string condition
+        string type
+        number price
+        string exchangeWishlist
+        array images
+        string status
+        timestamp createdAt
+        timestamp updatedAt
+    }
 
-## Support
+    COMMENTS {
+        string id PK
+        string bookId FK
+        string userId FK
+        string content
+        timestamp createdAt
+        timestamp updatedAt
+    }
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+    TRANSACTIONS {
+        string id PK
+        string bookId FK
+        string buyerId FK
+        string sellerId FK
+        string type
+        string status
+        number amount
+        string exchangeBookInfo
+        timestamp createdAt
+        timestamp updatedAt
+    }
+```
 
-## Stay in touch
+## Quick Start
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### Prerequisites
 
-## License
+- Node.js (v18 or higher)
+- pnpm (v8 or higher)
+- Firebase project with Firestore and Cloud Storage enabled
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd api-utaipei-book-xchange
+```
+
+2. Install dependencies:
+```bash
+pnpm install
+```
+
+3. Configure environment variables:
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your Firebase credentials:
+```env
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_PRIVATE_KEY=your-private-key
+FIREBASE_CLIENT_EMAIL=your-client-email
+FIREBASE_STORAGE_BUCKET=your-bucket-name
+JWT_SECRET=your-jwt-secret-key
+PORT=3000
+NODE_ENV=development
+```
+
+### Development
+
+Start the development server with hot reload:
+```bash
+pnpm run dev
+```
+
+The API will be available at:
+- API Endpoints: `http://localhost:3000/api`
+- Swagger Documentation: `http://localhost:3000/api/docs`
+
+### Build and Production
+
+Build the application:
+```bash
+pnpm run build
+```
+
+Run in production mode:
+```bash
+pnpm run start:prod
+```
+
+### Testing
+
+Run unit tests:
+```bash
+pnpm run test
+```
+
+Run tests with coverage:
+```bash
+pnpm run test:cov
+```
+
+Run end-to-end tests:
+```bash
+pnpm run test:e2e
+```
+
+### Code Quality
+
+Format code with Prettier:
+```bash
+pnpm run format
+```
+
+Lint code with ESLint:
+```bash
+pnpm run lint
+```
+
+### API Endpoints
+
+After starting the server, explore the interactive API documentation at `http://localhost:3000/api/docs` for detailed endpoint information, request/response schemas, and authentication requirements.
+
+Key endpoint groups:
+- `/api/auth` - Authentication (register, login)
+- `/api/users` - User profile management
+- `/api/books` - Book listing operations
+- `/api/comments` - Comment management
+- `/api/transactions` - Transaction workflow
+
+---
+
+**License**: UNLICENSED
+**Framework**: NestJS 11.x
+**Database**: Firebase Firestore
+**Storage**: Firebase Cloud Storage
